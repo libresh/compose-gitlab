@@ -14,12 +14,11 @@ gitlab:
     - postgresql:postgresql
   ports:
     - 10022:10022/tcp
-    - 10080:80/tcp
   hostname: ${gitlab_hostname}
   environment:
     - GITLAB_SECRETS_DB_KEY_BASE=long-and-random-alphanumeric-string
     - GITLAB_HOST=${gitlab_hostname}
-    - GITLAB_PORT=10080
+    - GITLAB_PORT=443
     - GITLAB_SSH_PORT=10022
     - GITLAB_NOTIFY_ON_BROKEN_BUILDS=true
     - GITLAB_NOTIFY_PUSHER=false
