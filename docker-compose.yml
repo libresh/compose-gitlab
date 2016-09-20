@@ -1,50 +1,93 @@
 postgresql:
-  image: sameersbn/postgresql:9.4-20
+  image: sameersbn/postgresql:9.5-1
   environment:
     - DB_USER=gitlab
-    - DB_PASS=password
     - DB_NAME=gitlabhq_production
     - DB_EXTENSION=pg_trgm
+    - DB_PASS
   volumes:
-    - ./pg_gitlab:/var/lib/postgresql
-gitlab:
-  image: sameersbn/gitlab:8.6.6
-  links:
-    - redis:redisio
-    - postgresql:postgresql
-  ports:
-    - 10022:10022/tcp
-  hostname: ${gitlab_hostname}
-  environment:
-    - GITLAB_SECRETS_DB_KEY_BASE=long-and-random-alphanumeric-string
-    - GITLAB_HOST=${gitlab_hostname}
-    - GITLAB_PORT=443
-    - GITLAB_SSH_PORT=10022
-    - GITLAB_NOTIFY_ON_BROKEN_BUILDS=true
-    - GITLAB_NOTIFY_PUSHER=false
-    - GITLAB_EMAIL=notifications@example.com
-    - GITLAB_EMAIL_REPLY_TO=noreply@example.com
-    - GITLAB_INCOMING_EMAIL_ADDRESS=reply@example.com
-    - GITLAB_BACKUP_SCHEDULE=daily
-    - GITLAB_BACKUP_TIME=01:00
-    - SMTP_ENABLED=false
-    - SMTP_DOMAIN=www.example.com
-    - SMTP_HOST=smtp.gmail.com
-    - SMTP_PORT=587
-    - SMTP_USER=mailer@example.com
-    - SMTP_PASS=password
-    - SMTP_STARTTLS=true
-    - SMTP_AUTHENTICATION=login
-    - IMAP_ENABLED=false
-    - IMAP_HOST=imap.gmail.com
-    - IMAP_PORT=993
-    - IMAP_USER=mailer@example.com
-    - IMAP_PASS=password
-    - IMAP_SSL=true
-    - IMAP_STARTTLS=false
-  volumes:
-    - ./data_gitlab:/home/git/data
+    - ./postgresql:/var/lib/postgresql
+
 redis:
   image: sameersbn/redis:latest
+  command:
+    - --loglevel warning
   volumes:
-    - ./redis_gitlab:/var/lib/redis
+    - ./redis:/var/lib/redis
+
+gitlab:
+  image: sameersbn/gitlab:8.11.6
+  links:
+    - redis
+    - postgresql
+    - registry
+  ports:
+    - 22:22/tcp
+    - 5000:5000
+  hostname: ${VIRTUAL_HOST}
+  environment:
+    - DB_PASS
+    - GITLAB_SECRETS_DB_KEY_BASE
+    - GITLAB_HOST=${VIRTUAL_HOST}
+    - GITLAB_PORT=443
+    - GITLAB_SSH_PORT=22
+    - GITLAB_EMAIL=${MAIL_USER}
+    - GITLAB_EMAIL_REPLY_TO=${MAIL_USER}
+    - GITLAB_INCOMING_EMAIL_ADDRESS=${MAIL_USER}
+    - GITLAB_BACKUP_SCHEDULE=daily
+    - GITLAB_BACKUP_TIME=01:00
+    - SMTP_ENABLED=true
+    - SMTP_USER=${MAIL_USER}
+    - SMTP_PASS=${MAIL_PASS}
+    - SMTP_HOST=${MAIL_HOST}
+    - SMTP_DOMAIN=${MAIL_DOMAIN}
+    - SMTP_PORT=587
+    - SMTP_STARTTLS=true
+    - SMTP_AUTHENTICATION=login
+    - IMAP_ENABLED=true
+    - IMAP_HOST=${MAIL_HOST}
+    - IMAP_PORT=995
+    - IMAP_USER=${MAIL_USER}
+    - IMAP_PASS=${MAIL_PASS}
+    - IMAP_SSL=true
+    - IMAP_STARTTLS=false
+    - VIRTUAL_HOST
+    - GITLAB_REGISTRY_ENABLED=true
+    - GITLAB_REGISTRY_HOST=${VIRTUAL_HOST}
+    - GITLAB_REGISTRY_PORT=5000
+    - GITLAB_REGISTRY_API_URL=http://registry:5000
+    - GITLAB_REGISTRY_KEY_PATH=/certs/registry-auth.key
+    - GITLAB_REGISTRY_PATH=/registry
+    - GITLAB_REGISTRY_KEY_ISSUER=gitlab-issuer
+    - SSL_REGISTRY_KEY_PATH=/certs/registry.key
+    - SSL_REGISTRY_CERT_PATH=/certs/registry.crt
+
+  volumes:
+    - ./data_gitlab:/home/git/data:Z
+    - ./logs:/var/log/gitlab
+    - ./certs:/certs
+
+registry:
+  image: registry:2.4.1
+  volumes:
+    - ./data/gitlab/shared/registry:/registry
+    - ./certs:/certs:ro
+  environment:
+    - REGISTRY_LOG_LEVEL=info
+    - REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/registry
+    - REGISTRY_AUTH_TOKEN_SERVICE=container_registry
+    - REGISTRY_STORAGE_DELETE_ENABLED=true
+    - REGISTRY_AUTH_TOKEN_REALM=https://${VIRTUAL_HOST}/jwt/auth
+    - REGISTRY_AUTH_TOKEN_ISSUER=gitlab-issuer
+    - REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE=/certs/registry-auth.crt
+GitlabCIMultiRunner:
+  image: sameersbn/gitlab-ci-multi-runner-privileged:latest
+  volumes:
+    - ./data/gitlab-runner:/home/gitlab_ci_multi_runner/data
+#    - /var/run/docker.sock:/var/run/docker.sock
+  environment:
+    - CI_SERVER_URL=https://${VIRTUAL_HOST}/ci
+    - RUNNER_TOKEN=
+    - RUNNER_DESCRIPTION=CI_Runner_1
+    - RUNNER_EXECUTOR=shell
+  restart: always

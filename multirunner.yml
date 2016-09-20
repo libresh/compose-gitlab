@@ -1,0 +1,11 @@
+GitlabCIMultiRunner:
+  image: sameersbn/gitlab-ci-multi-runner-privileged:latest
+  volumes:
+    - ./data/gitlab-runner:/home/gitlab_ci_multi_runner/data
+    - /var/run/docker.sock:/var/run/docker.sock
+  environment:
+    - CI_SERVER_URL=https://${VIRTUAL_HOST}/ci
+    - RUNNER_TOKEN=
+    - RUNNER_DESCRIPTION=CI_Runner_1
+    - RUNNER_EXECUTOR=shell
+  restart: always

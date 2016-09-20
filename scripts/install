@@ -1,0 +1,16 @@
+#!/bin/bash -eux
+
+DB_PASS=`tr -dc A-Za-z0-9_ < /dev/urandom | head -c 20 | xargs`
+GITLAB_SECRETS_DB_KEY_BASE=`tr -dc A-Za-z0-9_ < /dev/urandom | head -c 50 | xargs`
+
+echo "DB_PASS=${DB_PASS}" > env
+echo "GITLAB_SECRETS_DB_KEY_BASE=${GITLAB_SECRETS_DB_KEY_BASE}" >> env
+echo "MAIL_PASS=${MAIL_PASS}" >> env
+echo "MAIL_USER=${MAIL_USER}" >> env
+echo "MAIL_HOST=${MAIL_HOST}" >> env
+echo "MAIL_PORT=${MAIL_PORT}" >> env
+echo "MAIL_DOMAIN=${MAIL_DOMAIN}" >> env
+
+mkdir certs && cd certs
+openssl req -nodes -newkey rsa:4096 -keyout registry-auth.key -out registry-auth.csr -subj "/CN=gitlab-issuer"
+openssl x509 -in registry-auth.csr -out registry-auth.crt -req -signkey registry-auth.key -days 3650
