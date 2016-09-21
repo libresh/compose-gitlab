@@ -1,35 +1,47 @@
-postgresql:
-  image: sameersbn/postgresql:9.5-1
-  environment:
+version: '2'
+
+services:
+  postgresql:
+    image: sameersbn/postgresql:9.5-1
+    environment:
     - DB_USER=gitlab
     - DB_NAME=gitlabhq_production
     - DB_EXTENSION=pg_trgm
     - DB_PASS
-  volumes:
+    volumes:
     - ./postgresql:/var/lib/postgresql
 
-redis:
-  image: sameersbn/redis:latest
-  command:
+  redis:
+    image: sameersbn/redis:latest
+    command:
     - --loglevel warning
-  volumes:
+    volumes:
     - ./redis:/var/lib/redis
 
-gitlab:
-  image: sameersbn/gitlab:8.11.6
-  links:
+  gitlab:
+    image: sameersbn/gitlab:8.11.6
+    depends_on:
     - redis
     - postgresql
-    - registry
-  ports:
+    ports:
     - 22:22/tcp
     - 5000:5000
-  hostname: ${VIRTUAL_HOST}
-  environment:
-    - DB_PASS
-    - GITLAB_SECRETS_DB_KEY_BASE
-    - GITLAB_HOST=${VIRTUAL_HOST}
+    hostname: ${VIRTUAL_HOST}
+    environment:
+    - GITLAB_HTTPS=true
     - GITLAB_PORT=443
+    - REDIS_HOST=redis
+    - REDIS_PORT=6379
+    - DB_PASS
+    - DB_ADAPTER=postgresql
+    - DB_HOST=postgresql
+    - DB_PORT=5432
+    - DB_USER=gitlab
+    - DB_NAME=gitlabhq_production
+    - GITLAB_SECRETS_DB_KEY_BASE
+    - GITLAB_SECRETS_SECRET_KEY_BASE
+    - GITLAB_SECRETS_OTP_KEY_BASE
+    - GITLAB_HOST=${VIRTUAL_HOST}
     - GITLAB_SSH_PORT=22
     - GITLAB_EMAIL=${MAIL_USER}
     - GITLAB_EMAIL_REPLY_TO=${MAIL_USER}
@@ -61,18 +73,16 @@ gitlab:
     - GITLAB_REGISTRY_KEY_ISSUER=gitlab-issuer
     - SSL_REGISTRY_KEY_PATH=/certs/registry.key
     - SSL_REGISTRY_CERT_PATH=/certs/registry.crt
-
-  volumes:
-    - ./data_gitlab:/home/git/data:Z
+    volumes:
+    - ./data:/home/git/data:Z
     - ./logs:/var/log/gitlab
     - ./certs:/certs
-
-registry:
-  image: registry:2.4.1
-  volumes:
+  registry:
+    image: registry:2.4.1
+    volumes:
     - ./data/gitlab/shared/registry:/registry
     - ./certs:/certs:ro
-  environment:
+    environment:
     - REGISTRY_LOG_LEVEL=info
     - REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/registry
     - REGISTRY_AUTH_TOKEN_SERVICE=container_registry
@@ -80,14 +90,3 @@ registry:
     - REGISTRY_AUTH_TOKEN_REALM=https://${VIRTUAL_HOST}/jwt/auth
     - REGISTRY_AUTH_TOKEN_ISSUER=gitlab-issuer
     - REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE=/certs/registry-auth.crt
-GitlabCIMultiRunner:
-  image: sameersbn/gitlab-ci-multi-runner-privileged:latest
-  volumes:
-    - ./data/gitlab-runner:/home/gitlab_ci_multi_runner/data
-#    - /var/run/docker.sock:/var/run/docker.sock
-  environment:
-    - CI_SERVER_URL=https://${VIRTUAL_HOST}/ci
-    - RUNNER_TOKEN=
-    - RUNNER_DESCRIPTION=CI_Runner_1
-    - RUNNER_EXECUTOR=shell
-  restart: always
