@@ -30,7 +30,7 @@ services:
     - redis
     - postgresql
     ports:
-    - "22:22"
+    - "10022:22"
     hostname: ${VIRTUAL_HOST}
     environment:
     - GITLAB_HTTPS=true
@@ -47,7 +47,7 @@ services:
     - GITLAB_SECRETS_SECRET_KEY_BASE
     - GITLAB_SECRETS_OTP_KEY_BASE
     - GITLAB_HOST=${VIRTUAL_HOST}
-    - GITLAB_SSH_PORT=22
+    - GITLAB_SSH_PORT=10022
     - GITLAB_EMAIL=${MAIL_USER}
     - GITLAB_EMAIL_REPLY_TO=${MAIL_USER}
     - GITLAB_INCOMING_EMAIL_ADDRESS=${MAIL_USER}
