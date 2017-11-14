@@ -1,0 +1,6 @@
+certs/
+.env
+data/
+logs/
+postgresql/
+redis/
