@@ -30,7 +30,7 @@ services:
     - postgresql
     - redis
     ports:
-    - "10022:22"
+    - "${GITLAB_SSH_PORT:-10022}:22"
     hostname: ${VIRTUAL_HOST}
     environment:
     - DB_ADAPTER=postgresql
@@ -56,7 +56,7 @@ services:
     - GITLAB_SECRETS_DB_KEY_BASE
     - GITLAB_SECRETS_OTP_KEY_BASE
     - GITLAB_SECRETS_SECRET_KEY_BASE
-    - GITLAB_SSH_PORT=10022
+    - GITLAB_SSH_PORT=${GITLAB_SSH_PORT:-10022}
     - IMAP_ENABLED=true
     - IMAP_HOST=${MAIL_HOST}
     - IMAP_PASS=${MAIL_PASS}
