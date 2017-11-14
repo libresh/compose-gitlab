@@ -25,7 +25,7 @@ services:
     networks:
     - back
   gitlab:
-    image: sameersbn/gitlab:9.1.2
+    image: sameersbn/gitlab:10.1.2
     depends_on:
     - redis
     - postgresql
