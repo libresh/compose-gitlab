@@ -8,10 +8,10 @@ services:
   postgresql:
     image: sameersbn/postgresql:9.5-1
     environment:
-    - DB_USER=gitlab
-    - DB_NAME=gitlabhq_production
     - DB_EXTENSION=pg_trgm
+    - DB_NAME=gitlabhq_production
     - DB_PASS
+    - DB_USER=gitlab
     volumes:
     - ./postgresql:/var/lib/postgresql
     networks:
@@ -27,66 +27,66 @@ services:
   gitlab:
     image: sameersbn/gitlab:10.1.2
     depends_on:
-    - redis
     - postgresql
+    - redis
     ports:
     - "10022:22"
     hostname: ${VIRTUAL_HOST}
     environment:
-    - GITLAB_HTTPS=true
-    - GITLAB_PORT=443
-    - REDIS_HOST=redis
-    - REDIS_PORT=6379
-    - DB_PASS
     - DB_ADAPTER=postgresql
     - DB_HOST=postgresql
+    - DB_NAME=gitlabhq_production
+    - DB_PASS
     - DB_PORT=5432
     - DB_USER=gitlab
-    - DB_NAME=gitlabhq_production
-    - GITLAB_SECRETS_DB_KEY_BASE
-    - GITLAB_SECRETS_SECRET_KEY_BASE
-    - GITLAB_SECRETS_OTP_KEY_BASE
-    - GITLAB_HOST=${VIRTUAL_HOST}
-    - GITLAB_SSH_PORT=10022
-    - GITLAB_EMAIL=${MAIL_USER}
-    - GITLAB_EMAIL_REPLY_TO=${MAIL_USER}
-    - GITLAB_INCOMING_EMAIL_ADDRESS=${MAIL_USER}
     - GITLAB_BACKUP_SCHEDULE=daily
     - GITLAB_BACKUP_TIME=01:00
-    - SMTP_ENABLED=true
-    - SMTP_USER=${MAIL_USER}
-    - SMTP_PASS=${MAIL_PASS}
-    - SMTP_HOST=${MAIL_HOST}
-    - SMTP_DOMAIN=${MAIL_DOMAIN}
-    - SMTP_PORT=587
-    - SMTP_STARTTLS=true
-    - SMTP_AUTHENTICATION=login
-    - IMAP_ENABLED=true
-    - IMAP_HOST=${MAIL_HOST}
-    - IMAP_PORT=995
-    - IMAP_USER=${MAIL_USER}
-    - IMAP_PASS=${MAIL_PASS}
-    - IMAP_SSL=true
-    - IMAP_STARTTLS=false
-    - VIRTUAL_HOST
+    - GITLAB_EMAIL=${MAIL_USER}
+    - GITLAB_EMAIL_REPLY_TO=${MAIL_USER}
+    - GITLAB_HTTPS=true
+    - GITLAB_HOST=${VIRTUAL_HOST}
+    - GITLAB_INCOMING_EMAIL_ADDRESS=${MAIL_USER}
+    - GITLAB_PORT=443
+    - GITLAB_REGISTRY_API_URL=http://registry:5000
     - GITLAB_REGISTRY_ENABLED=true
     - GITLAB_REGISTRY_HOST=registry.indie.host
-    - GITLAB_REGISTRY_PORT=443
-    - GITLAB_REGISTRY_API_URL=http://registry:5000
     - GITLAB_REGISTRY_KEY_PATH=/certs/registry-auth.key
     - GITLAB_REGISTRY_KEY_ISSUER=gitlab-issuer
+    - GITLAB_REGISTRY_PORT=443
+    - GITLAB_SECRETS_DB_KEY_BASE
+    - GITLAB_SECRETS_OTP_KEY_BASE
+    - GITLAB_SECRETS_SECRET_KEY_BASE
+    - GITLAB_SSH_PORT=10022
+    - IMAP_ENABLED=true
+    - IMAP_HOST=${MAIL_HOST}
+    - IMAP_PASS=${MAIL_PASS}
+    - IMAP_PORT=995
+    - IMAP_SSL=true
+    - IMAP_STARTTLS=false
+    - IMAP_USER=${MAIL_USER}
+    - REDIS_HOST=redis
+    - REDIS_PORT=6379
+    - SMTP_AUTHENTICATION=login
+    - SMTP_DOMAIN=${MAIL_DOMAIN}
+    - SMTP_ENABLED=true
+    - SMTP_HOST=${MAIL_HOST}
+    - SMTP_PASS=${MAIL_PASS}
+    - SMTP_PORT=587
+    - SMTP_STARTTLS=true
+    - SMTP_USER=${MAIL_USER}
+    - VIRTUAL_HOST
     volumes:
+    - ./certs:/certs:ro
     - ./data:/home/git/data:Z
     - ./logs:/var/log/gitlab
-    - ./certs:/certs:ro
     networks:
     - back
     - lb_web
   registry:
     image: registry:2.4.1
     volumes:
-    - ./data/gitlab/shared/registry:/registry
     - ./certs:/certs:ro
+    - ./data/gitlab/shared/registry:/registry
     environment:
     - REGISTRY_LOG_LEVEL=info
     - REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/registry
@@ -104,8 +104,8 @@ services:
     volumes:
     - ./nginx.conf:/etc/nginx/nginx.conf
     environment:
-    - VIRTUAL_HOST=registry.indie.host
     - REGISTRY_HTTP_RELATIVEURLS=true
+    - VIRTUAL_HOST=registry.indie.host
     networks:
     - back
     - lb_web
